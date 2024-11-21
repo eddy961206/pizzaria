@@ -113,14 +113,14 @@ export default function PostCard({ post }: PostCardProps) {
     <div className="bg-white rounded-lg shadow-md p-4">
       {/* 게시글 헤더 */}
       <div className="flex items-center mb-4">
-        <div className="font-bold">{post.nickname}</div>
+        <div className="font-bold text-gray-900">{post.nickname}</div>
         <div className="text-gray-500 text-sm ml-2">
           {format(post.createdAt, 'PPP', { locale: ko })}
         </div>
       </div>
 
       {/* 게시글 내용 */}
-      <p className="mb-4">{post.content}</p>
+      <p className="mb-4 text-gray-800">{post.content}</p>
       {post.imageUrl && (
         <img 
           src={post.imageUrl} 
@@ -186,12 +186,12 @@ export default function PostCard({ post }: PostCardProps) {
               {comments.map(comment => (
                 <div key={comment.id} className="border-b pb-2">
                   <div className="flex items-center justify-between">
-                    <div className="font-bold">{comment.nickname}</div>
+                    <div className="font-bold text-gray-900">{comment.nickname}</div>
                     <div className="text-gray-500 text-sm">
                       {format(comment.createdAt, 'PPP', { locale: ko })}
                     </div>
                   </div>
-                  <p className="mt-1">{comment.content}</p>
+                  <p className="mt-1 text-gray-800">{comment.content}</p>
                 </div>
               ))}
             </div>
