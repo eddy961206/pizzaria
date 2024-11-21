@@ -142,6 +142,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       return;
     }
 
+    // 댓글이 있는 경우 삭제 불가
+    if (commentsCount > 0) {
+      alert('댓글이 있는 게시글은 삭제할 수 없습니다.');
+      return;
+    }
+
     if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
       try {
         await deleteDoc(doc(db, 'posts', post.id));
