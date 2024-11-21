@@ -31,6 +31,7 @@ export default function PostCard({ post }: PostCardProps) {
   const [newComment, setNewComment] = useState('');
   const [nickname, setNickname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(post.comments);
 
   // 좋아요 토글 함수
   const toggleLike = async () => {
@@ -112,6 +113,7 @@ export default function PostCard({ post }: PostCardProps) {
       // UI 업데이트
       const newCommentWithId = { id: commentRef.id, ...commentData };
       setComments(prev => [newCommentWithId, ...prev]);
+      setCommentsCount(prev => prev + 1);
       setNewComment('');
       setNickname('');
     } catch (error) {
@@ -140,21 +142,23 @@ export default function PostCard({ post }: PostCardProps) {
         />
       )}
 
-      {/* 좋아요 & 댓글 버튼 */}
+      {/* 좋아요와 댓글 */}
       <div className="flex items-center space-x-4 mb-4">
+        {/* 좋아요 버튼 */}
         <button 
           onClick={toggleLike}
           className="flex items-center space-x-1 text-gray-500 hover:text-red-500"
         >
-          {isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
-          <span>{likesCount}</span>
+          {isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />} {/* 좋아요 아이콘 */}
+          <span>{likesCount}</span> {/* 좋아요 카운트 */}
         </button>
+        {/* 댓글 버튼 */}
         <button 
           onClick={loadComments}
           className="flex items-center space-x-1 text-gray-500 hover:text-blue-500"
         >
-          <FaComment />
-          <span>{post.comments}</span>
+          <FaComment /> {/* 댓글 아이콘 */}
+          <span>{commentsCount}</span>  {/* 댓글 카운트 */}
         </button>
       </div>
 
