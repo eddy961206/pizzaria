@@ -157,7 +157,7 @@ export default function PostCard({ post }: PostCardProps) {
               placeholder="닉네임"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              className="w-full p-2 mb-2 border rounded"
+              className="w-full p-2 mb-2 border rounded text-gray-700"
               required
             />
             <div className="flex">
@@ -166,7 +166,7 @@ export default function PostCard({ post }: PostCardProps) {
                 placeholder="댓글을 입력하세요"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 p-2 border rounded-l"
+                className="flex-1 p-2 border rounded-l text-gray-700"
                 required
               />
               <button

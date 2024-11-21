@@ -49,7 +49,7 @@ export default function NewPostButton() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+          <div className="bg-white text-gray-600 rounded-lg p-6 w-full max-w-lg">
             <h2 className="text-2xl font-bold mb-4">새 게시글 작성</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
