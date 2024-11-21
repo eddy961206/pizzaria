@@ -5,7 +5,7 @@ import { Post, Comment } from '@/types';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { FaHeart, FaRegHeart, FaComment } from 'react-icons/fa';
-import { db } from '@/lib/firebase';
+import { db, writeBatch, increment } from '@/lib/firebase';
 import { doc, updateDoc, collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
 
 interface PostCardProps {
@@ -51,15 +51,21 @@ export default function PostCard({ post }: PostCardProps) {
           orderBy('createdAt', 'desc')
         );
         const snapshot = await getDocs(commentsQuery);
-        const commentsList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Comment));
-        setComments(commentsList);
+        if (!snapshot.empty) {
+          const commentsList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Comment));
+          setComments(commentsList);
+        } else {
+          setComments([]);
+        }
       } catch (error) {
         console.error('댓글을 불러오는 중 에러 발생:', error);
+        setComments([]);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
     setShowComments(!showComments);
   };
@@ -69,26 +75,37 @@ export default function PostCard({ post }: PostCardProps) {
     e.preventDefault();
     if (!newComment.trim() || !nickname.trim()) return;
 
-    try {
-      const commentData = {
-        postId: post.id,
-        content: newComment,
-        nickname,
-        createdAt: Date.now()
-      };
+    const commentData = {
+      postId: post.id,
+      content: newComment.trim(),
+      nickname: nickname.trim(),
+      createdAt: Date.now()
+    };
 
-      const docRef = await addDoc(collection(db, 'comments'), commentData);
-      const newCommentWithId = { id: docRef.id, ...commentData };
-      setComments(prev => [newCommentWithId, ...prev]);
-      setNewComment('');
+    try {
+      // 트랜잭션으로 처리하여 데이터 일관성 보장
+      const batch = writeBatch(db);
+      
+      // 새 댓글 추가
+      const commentRef = doc(collection(db, 'comments'));
+      batch.set(commentRef, commentData);
       
       // 게시글의 댓글 수 업데이트
       const postRef = doc(db, 'posts', post.id);
-      await updateDoc(postRef, {
-        comments: post.comments + 1
+      batch.update(postRef, {
+        comments: increment(1)
       });
+
+      await batch.commit();
+
+      // UI 업데이트
+      const newCommentWithId = { id: commentRef.id, ...commentData };
+      setComments(prev => [newCommentWithId, ...prev]);
+      setNewComment('');
+      setNickname('');
     } catch (error) {
       console.error('댓글 작성 중 에러 발생:', error);
+      alert('댓글 작성에 실패했습니다. 다시 시도해주세요.');
     }
   };
 

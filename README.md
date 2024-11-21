@@ -67,7 +67,6 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
 다음 규칙을 입력하고 "게시" 버튼 클릭:
 
       ```javascript
-      CopyInsert
       rules_version = '2';
       service cloud.firestore {
         match /databases/{database}/documents {
@@ -103,20 +102,19 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
 * 스토리지 위치 선택 (Firestore와 동일한 위치 권장)
 * "규칙" 탭에서 다음 규칙 입력:
 
-      ```javascript
-      CopyInsert
-      rules_version = '2';
-      service firebase.storage {
-        match /b/{bucket}/o {
-          match /{allPaths=**} {
-            // 5MB 이하의 이미지 파일만 업로드 허용
-            allow read: if true;
-            allow write: if request.resource.size < 5 * 1024 * 1024
-                        && request.resource.contentType.matches('image/.*');
-          }
+    ```javascript
+    rules_version = '2';
+    service firebase.storage {
+      match /b/{bucket}/o {
+        match /{allPaths=**} {
+          // 5MB 이하의 이미지 파일만 업로드 허용
+          allow read: if true;
+          allow write: if request.resource.size < 5 * 1024 * 1024
+                      && request.resource.contentType.matches('image/.*');
         }
       }
-      ```
+    }
+    ```
 
 이 규칙들은 다음과 같은 보안 기능을 제공합니다:
 
@@ -161,5 +159,19 @@ npm install firebase @firebase/firestore react-infinite-scroll-component react-i
 #### 6. 컴포넌트들 생성
 
 `src/components/*.tsx` 생성
+
+
+#### 7. 댓글 관련 Firestore 복합 인덱스 설정
+
+1. Firebase Console에서 Firestore Database의 Indexes 탭으로 이동
+
+2. "Create Index" 버튼을 클릭하여 다음과 같이 복합 인덱스를 생성 :
+
+| Collection ID | Fields to index | Index type |
+|--------------|-----------------|------------|
+| comments     | postId ↑        | Ascending  |
+|              | createdAt ↓     | Descending |
+
+- Query scope: Collection
 
 
