@@ -115,7 +115,7 @@ export default function PostCard({ post }: PostCardProps) {
       <div className="flex items-center mb-4">
         <div className="font-bold text-gray-900">{post.nickname}</div>
         <div className="text-gray-500 text-sm ml-2">
-          {format(post.createdAt, 'PPP', { locale: ko })}
+          {format(post.createdAt, 'PPP a h:mm', { locale: ko })}
         </div>
       </div>
 
@@ -188,7 +188,7 @@ export default function PostCard({ post }: PostCardProps) {
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-gray-900">{comment.nickname}</div>
                     <div className="text-gray-500 text-sm">
-                      {format(comment.createdAt, 'PPP', { locale: ko })}
+                      {format(comment.createdAt, 'PPP a h:mm', { locale: ko })}
                     </div>
                   </div>
                   <p className="mt-1 text-gray-800">{comment.content}</p>
