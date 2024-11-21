@@ -70,26 +70,20 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
       rules_version = '2';
       service cloud.firestore {
         match /databases/{database}/documents {
-          // 게시글 컬렉션 규칙
+          // posts 컬렉션 규칙
           match /posts/{postId} {
             allow read: if true;  // 누구나 읽기 가능
-            allow create: if request.resource.data.keys().hasAll(['content', 'nickname', 'createdAt', 'likes', 'comments'])
-                        && request.resource.data.content is string
-                        && request.resource.data.nickname is string
-                        && request.resource.data.createdAt is number
-                        && request.resource.data.likes == 0
-                        && request.resource.data.comments == 0;
-            allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['likes', 'comments']);
+            allow create: if true;  // 누구나 생성 가능
+            allow update: if true;  // 누구나 수정 가능 (IP 체크는 클라이언트에서)
+            allow delete: if true;  // 누구나 삭제 가능 (IP 체크는 클라이언트에서)
           }
           
-          // 댓글 컬렉션 규칙
+          // comments 컬렉션 규칙
           match /comments/{commentId} {
-            allow read: if true;  // 누구나 읽기 가능
-            allow create: if request.resource.data.keys().hasAll(['postId', 'content', 'nickname', 'createdAt'])
-                        && request.resource.data.content is string
-                        && request.resource.data.nickname is string
-                        && request.resource.data.createdAt is number;
+            allow read: if true;
+            allow create: if true;
+            allow update: if true;
+            allow delete: if true;
           }
         }
       }
