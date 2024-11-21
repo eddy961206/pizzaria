@@ -22,11 +22,11 @@
 
 1. 저장소 클론
 ```bash
-git clone <repository-url>
+git clone https://github.com/eddy961206/pizzaria.git
 cd pizzaria
 ```
 
-2. 의존성 설치
+2. next.js 의존성 설치
 ```bash
 npm install
 ```
@@ -130,3 +130,36 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
 ## 라이선스
 
 MIT
+
+---
+
+### 첫 프로젝트 세팅했을 때 방법
+
+#### 1. Next.js 프로젝트 생성
+
+```bash
+npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias @/*
+```
+#### 2. Firebase 추가 패키지 설치
+
+```bash
+npm install firebase @firebase/firestore react-infinite-scroll-component react-icons date-fns
+```
+
+#### 3. Firebase 설정 파일 생성
+
+`src/lib/firebase.ts` 파일 생성 후 파일 내용 추가
+
+#### 4. 환경 설정파일 생성
+
+`/.env.local`
+
+#### 5. 메인 페이지 생성
+
+`src/app/page.tsx` 생성
+
+#### 6. 컴포넌트들 생성
+
+`src/components/*.tsx` 생성
+
+
