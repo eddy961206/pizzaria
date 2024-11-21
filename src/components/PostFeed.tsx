@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, orderBy, limit, startAfter, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Post } from '@/types';
 import PostCard from './PostCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import { subscribeToNewPosts } from './NewPostButton';
 
 const POSTS_PER_PAGE = 5;
 
@@ -13,6 +14,22 @@ export default function PostFeed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
+
+  // 게시글 삭제 핸들러
+  const handlePostDelete = useCallback((postId: string) => {
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+  }, []);
+
+  // 게시글 추가 핸들러
+  const handlePostAdd = useCallback((newPost: Post) => {
+    setPosts(prevPosts => [newPost, ...prevPosts]);
+  }, []);
+
+  // 새 게시글 이벤트 구독
+  useEffect(() => {
+    const unsubscribe = subscribeToNewPosts(handlePostAdd);
+    return () => unsubscribe();
+  }, [handlePostAdd]);
 
   // 초기 게시글 로딩
   useEffect(() => {
@@ -29,14 +46,30 @@ export default function PostFeed() {
       );
       
       const snapshot = await getDocs(postsQuery);
-      const postList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Post));
+      const batch = writeBatch(db);
+      
+      const postList = snapshot.docs.map(doc => {
+        const data = doc.data();
+        // authorIp가 없는 경우 레거시 표시를 위한 특별 값 할당
+        if (!data.authorIp) {
+          batch.update(doc.ref, { 
+            authorIp: 'legacy-post',
+            comments: data.comments || 0 
+          });
+        }
+        return {
+          id: doc.id,
+          ...data,
+          authorIp: data.authorIp || 'legacy-post',
+          comments: data.comments || 0
+        } as Post;
+      });
 
+      await batch.commit();
       setPosts(postList);
       setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
       setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+      
     } catch (error) {
       console.error('게시글을 불러오는 중 에러 발생:', error);
     }
@@ -55,11 +88,25 @@ export default function PostFeed() {
       );
 
       const snapshot = await getDocs(postsQuery);
-      const newPosts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Post));
+      const batch = writeBatch(db);
+      
+      const newPosts = snapshot.docs.map(doc => {
+        const data = doc.data();
+        if (!data.authorIp) {
+          batch.update(doc.ref, { 
+            authorIp: 'legacy-post',
+            comments: data.comments || 0 
+          });
+        }
+        return {
+          id: doc.id,
+          ...data,
+          authorIp: data.authorIp || 'legacy-post',
+          comments: data.comments || 0
+        } as Post;
+      });
 
+      await batch.commit();
       setPosts(prevPosts => [...prevPosts, ...newPosts]);
       setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
       setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
@@ -82,7 +129,11 @@ export default function PostFeed() {
     >
       <div className="space-y-4">
         {posts.map(post => (
-          <PostCard key={post.id} post={post} />
+          <PostCard 
+            key={post.id} 
+            post={post} 
+            onDelete={handlePostDelete}  // 삭제 핸들러 전달
+          />
         ))}
       </div>
     </InfiniteScroll>

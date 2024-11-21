@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -16,14 +16,17 @@ import {
   where, 
   orderBy,
   writeBatch,
-  increment
+  increment,
+  deleteDoc
 } from 'firebase/firestore';
+import { useIpAddress } from '@/hooks/useIpAddress';
 
 interface PostCardProps {
   post: Post;
+  onDelete: (postId: string) => void;
 }
 
-export default function PostCard({ post }: PostCardProps) {
+export default function PostCard({ post, onDelete }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [showComments, setShowComments] = useState(false);
@@ -32,6 +35,15 @@ export default function PostCard({ post }: PostCardProps) {
   const [nickname, setNickname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.comments);
+  const ipAddress = useIpAddress();
+  const [isAuthor, setIsAuthor] = useState(false);
+
+  // IP 주소가 로드되면 작성자 여부 확인
+  useEffect(() => {
+    if (ipAddress) {
+      setIsAuthor(post.authorIp !== 'legacy-post' && post.authorIp === ipAddress);
+    }
+  }, [ipAddress, post.authorIp]);
 
   // 좋아요 토글 함수
   const toggleLike = async () => {
@@ -85,13 +97,14 @@ export default function PostCard({ post }: PostCardProps) {
   // 댓글 작성 함수
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !nickname.trim()) return;
+    if (!newComment.trim() || !nickname.trim() || !ipAddress) return;
 
     const commentData = {
       postId: post.id,
       content: newComment.trim(),
       nickname: nickname.trim(),
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      authorIp: ipAddress
     };
 
     try {
@@ -122,13 +135,69 @@ export default function PostCard({ post }: PostCardProps) {
     }
   };
 
+  // 게시글 삭제 함수 수정
+  const handleDeletePost = async () => {
+    if (!isAuthor) {
+      alert('작성자만 삭제할 수 있습니다.');
+      return;
+    }
+
+    if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      try {
+        await deleteDoc(doc(db, 'posts', post.id));
+        onDelete(post.id);  // 부모 컴포넌트에 삭제 알림
+      } catch (error) {
+        console.error('게시글 삭제 중 에러 발생:', error);
+        alert('게시글 삭제에 실패했습니다.');
+      }
+    }
+  };
+
+  // 댓글 삭제 함수를 컴포넌트 내부로 이동
+  const handleDeleteComment = async (commentId: string) => {
+    if (window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+      try {
+        const batch = writeBatch(db);
+        
+        // 댓글 삭제
+        const commentRef = doc(db, 'comments', commentId);
+        batch.delete(commentRef);
+        
+        // 게시글의 댓글 수 감소
+        const postRef = doc(db, 'posts', post.id);
+        batch.update(postRef, {
+          comments: increment(-1)
+        });
+
+        await batch.commit();
+
+        // UI 업데이트
+        setComments(prev => prev.filter(c => c.id !== commentId));
+        setCommentsCount(prev => prev - 1);
+      } catch (error) {
+        console.error('댓글 삭제 중 에러 발생:', error);
+        alert('댓글 삭제에 실패했습니다.');
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
       {/* 게시글 헤더 */}
       <div className="flex items-center justify-between mb-4">
         <div className="font-bold text-gray-900">{post.nickname}</div>
-        <div className="text-gray-500 text-sm">
-          {format(post.createdAt, 'PPP a h:mm', { locale: ko })}
+        <div className="flex items-center gap-2">
+          <div className="text-gray-500 text-sm">
+            {format(post.createdAt, 'PPP a h:mm', { locale: ko })}
+          </div>
+          {post.authorIp !== 'legacy-post' && isAuthor && (
+            <button
+              onClick={handleDeletePost}
+              className="text-red-500 hover:text-red-700 text-sm"
+            >
+              삭제
+            </button>
+          )}
         </div>
       </div>
 
@@ -202,8 +271,18 @@ export default function PostCard({ post }: PostCardProps) {
                 <div key={comment.id} className="border-b pb-2">
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-gray-900">{comment.nickname}</div>
-                    <div className="text-gray-500 text-sm">
-                      {format(comment.createdAt, 'PPP a h:mm', { locale: ko })}
+                    <div className="flex items-center gap-2">
+                      <div className="text-gray-500 text-sm">
+                        {format(comment.createdAt, 'PPP a h:mm', { locale: ko })}
+                      </div>
+                      {comment.authorIp === ipAddress && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          삭제
+                        </button>
+                      )}
                     </div>
                   </div>
                   <p className="mt-1 text-gray-800">{comment.content}</p>

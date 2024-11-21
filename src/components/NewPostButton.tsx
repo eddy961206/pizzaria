@@ -3,90 +3,108 @@
 import { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useIpAddress } from '@/hooks/useIpAddress';
+import { Post } from '@/types';
+
+// 이벤트 버스 생성
+type PostEventCallback = (post: Post) => void;
+const postEventListeners: PostEventCallback[] = [];
+
+// 이벤트 구독 함수
+export function subscribeToNewPosts(callback: PostEventCallback) {
+  postEventListeners.push(callback);
+  return () => {
+    const index = postEventListeners.indexOf(callback);
+    if (index > -1) {
+      postEventListeners.splice(index, 1);
+    }
+  };
+}
 
 export default function NewPostButton() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [content, setContent] = useState('');
   const [nickname, setNickname] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const ipAddress = useIpAddress();
 
   // 게시글 작성 함수
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !nickname.trim() || isSubmitting) return;
+    if (!content.trim() || !nickname.trim() || !ipAddress) return;
 
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
-      const postData = {
-        content,
-        nickname,
+      const post = {
+        content: content.trim(),
+        nickname: nickname.trim(),
         createdAt: Date.now(),
         likes: 0,
-        comments: 0
+        comments: 0,
+        authorIp: ipAddress
       };
 
-      await addDoc(collection(db, 'posts'), postData);
+      const docRef = await addDoc(collection(db, 'posts'), post);
+      const newPost = { id: docRef.id, ...post } as Post;
+      
+      // 모든 구독자에게 새 게시글 알림
+      postEventListeners.forEach(callback => callback(newPost));
+
       setContent('');
       setNickname('');
       setIsModalOpen(false);
-      // 페이지 새로고침하여 새 게시글 표시
-      window.location.reload();
     } catch (error) {
       console.error('게시글 작성 중 에러 발생:', error);
       alert('게시글 작성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 bg-orange-500 text-white p-4 rounded-full shadow-lg hover:bg-orange-600 transition-colors"
+        className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600"
       >
         ✏️ 글쓰기
       </button>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white text-gray-600 rounded-lg p-6 w-full max-w-lg">
-            <h2 className="text-2xl font-bold mb-4">새 게시글 작성</h2>
+          <div className="bg-white text-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">새 게시글 작성</h2>
             <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-2">닉네임</label>
-                <input
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  className="w-full p-2 border rounded"
-                  placeholder="닉네임을 입력하세요"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-2">내용</label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full p-2 border rounded h-32"
-                  placeholder="피자에 대한 생각을 공유해주세요!"
-                  required
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
+              <input
+                type="text"
+                placeholder="닉네임"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="w-full p-2 mb-4 border rounded text-gray-700"
+                required
+              />
+              <textarea
+                placeholder="내용을 입력하세요"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full p-2 mb-4 border rounded h-32 resize-none text-gray-700"
+                required
+              />
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  disabled={isLoading}
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:bg-gray-400"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
+                  disabled={isLoading}
                 >
-                  {isSubmitting ? '작성 중...' : '작성하기'}
+                  {isLoading ? '작성 중...' : '작성'}
                 </button>
               </div>
             </form>
