@@ -5,8 +5,19 @@ import { Post, Comment } from '@/types';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { FaHeart, FaRegHeart, FaComment } from 'react-icons/fa';
-import { db, writeBatch, increment } from '@/lib/firebase';
-import { doc, updateDoc, collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { 
+  doc, 
+  updateDoc, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy,
+  writeBatch,
+  increment
+} from 'firebase/firestore';
 
 interface PostCardProps {
   post: Post;
