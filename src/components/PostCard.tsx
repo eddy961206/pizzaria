@@ -45,22 +45,70 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   }, [ipAddress, post.authorIp]);
 
-  // 좋아요 토글 함수
+  // 좋아요 상태 체크
+  useEffect(() => {
+    const checkLikeStatus = async () => {
+      if (!ipAddress) return;
+      
+      try {
+        const likesQuery = query(
+          collection(db, 'likes'),
+          where('postId', '==', post.id),
+          where('userIp', '==', ipAddress)
+        );
+        
+        const snapshot = await getDocs(likesQuery);
+        setIsLiked(!snapshot.empty);
+      } catch (error) {
+        console.error('좋아요 상태 확인 중 에러 발생:', error);
+      }
+    };
+
+    checkLikeStatus();
+  }, [ipAddress, post.id]);
+
+  // 좋아요 토글 함수 수정
   const toggleLike = async () => {
-    const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
-    setIsLiked(!isLiked);
-    setLikesCount(newLikesCount);
+    if (!ipAddress) return;
 
     try {
+      const batch = writeBatch(db);
+      
+      // likes 컬렉션에서 현재 사용자의 좋아요 문서 찾기
+      const likesQuery = query(
+        collection(db, 'likes'),
+        where('postId', '==', post.id),
+        where('userIp', '==', ipAddress)
+      );
+      
+      const snapshot = await getDocs(likesQuery);
       const postRef = doc(db, 'posts', post.id);
-      await updateDoc(postRef, {
-        likes: newLikesCount
-      });
+
+      if (snapshot.empty && !isLiked) {
+        // 좋아요 추가
+        const likeRef = doc(collection(db, 'likes'));
+        batch.set(likeRef, {
+          postId: post.id,
+          userIp: ipAddress,
+          createdAt: Date.now()
+        });
+        batch.update(postRef, { likes: increment(1) });
+        setIsLiked(true);
+        setLikesCount(prev => prev + 1);
+      } else if (!snapshot.empty && isLiked) {
+        // 좋아요 제거
+        batch.delete(doc(db, 'likes', snapshot.docs[0].id));
+        batch.update(postRef, { likes: increment(-1) });
+        setIsLiked(false);
+        setLikesCount(prev => prev - 1);
+      }
+
+      await batch.commit();
     } catch (error) {
       console.error('좋아요 업데이트 중 에러 발생:', error);
       // 에러 발생 시 상태 되돌리기
-      setIsLiked(isLiked);
-      setLikesCount(likesCount);
+      setIsLiked(!isLiked);
+      setLikesCount(isLiked ? likesCount + 1 : likesCount - 1);
     }
   };
 
