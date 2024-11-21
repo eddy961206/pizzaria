@@ -112,9 +112,9 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
       {/* 게시글 헤더 */}
-      <div className="flex items-center mb-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="font-bold text-gray-900">{post.nickname}</div>
-        <div className="text-gray-500 text-sm ml-2">
+        <div className="text-gray-500 text-sm">
           {format(post.createdAt, 'PPP a h:mm', { locale: ko })}
         </div>
       </div>
