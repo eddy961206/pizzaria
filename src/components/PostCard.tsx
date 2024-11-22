@@ -202,11 +202,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
     // 댓글이 있는 경우 삭제 불가
     if (commentsCount > 0) {
-      alert('댓글이 있는 게시글은 삭제할 수 없습니다.');
+      alert('댓글이 존재하는 게시글은 삭제할 수 없습니다..');
       return;
     }
 
-    if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+    if (window.confirm('게시글을 삭제하시겠습니까?')) {
       setIsSubmitting(true);
       try {
         // 이미지가 있는 경우 Storage에서도 삭제
@@ -228,7 +228,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
   // 댓글 삭제 함수를 컴포넌트 내부로 이동
   const handleDeleteComment = async (commentId: string) => {
-    if (window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+    if (window.confirm('댓글을 삭제하시겠습니까?')) {
       try {
         const batch = writeBatch(db);
         
@@ -401,93 +401,16 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         {/* 게시글 헤더 - 수정/삭제 버튼 제거 */}
         <div className="flex items-center justify-between mb-4">
-          <div className="font-bold text-gray-900 dark:text-gray-100">{post.nickname}</div>
+          <div className="font-bold text-lg text-gray-900 dark:text-gray-100">{post.nickname}</div>
           <div className="text-gray-500 dark:text-gray-400 text-sm">
             {formatDate(post.createdAt)}
           </div>
         </div>
 
         {/* 게시글 내용 */}
-        {isEditing ? (
-          <form onSubmit={handleEditSubmit} className="mb-4">
-            {/* 이미지 업로드 버튼 */}
-            <div className="mb-4">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                ref={fileInputRef}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-              >
-                🖼️ 이미지 {post.imageUrl || previewUrl ? '변경' : '추가'}
-              </button>
-            </div>
-
-            {/* 현재 이미지 또는 새로 선택된 이미지 */}
-            {!isImageRemoved && (previewUrl || post.imageUrl) && (
-              <div className="mb-4 relative">
-                <img
-                  src={previewUrl || post.imageUrl}
-                  alt="게시글 이미지"
-                  className="w-full h-auto rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                >
-                  X
-                </button>
-              </div>
-            )}
-
-            {/* 텍스트 영역 */}
-            <textarea
-              name="post-edit"
-              placeholder="내용을 입력하세요"
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-              className="w-full p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 mb-2 min-h-[100px] whitespace-pre-wrap resize-none"
-              style={{ height: 'auto', minHeight: '100px' }}
-              required
-            />
-
-            {/* 버튼 영역 */}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleEditCancel}
-                className="px-3 py-1 text-gray-600 hover:text-gray-800"
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                저장
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            {/* 이미지를 본문 위로 이동 */}
-            {post.imageUrl && (
-              <img 
-                src={post.imageUrl} 
-                alt="게시글 이미지" 
-                className="w-full h-auto rounded-lg mb-4"
-              />
-            )}
-            <p className="mb-4 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{post.content}</p>
-          </>
-        )}
+        <p className="mb-4 text-lg text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
+          {post.content}
+        </p>
 
         {/* 좋아요, 댓글, 수정/삭제 버튼을 한 줄에 배치 */}
         <div className="flex items-center mb-4">
@@ -570,11 +493,13 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                   </div>
                 ) : (
                   comments.map(comment => (
-                    <div key={comment.id} className="border-b pb-2">
+                    <div key={comment.id} className="border-b pb-2 pl-2 border-l-4 border-l-gray-200 dark:border-l-gray-600">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-gray-900 dark:text-gray-100">{comment.nickname}</div>
+                        <div className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                          {comment.nickname}
+                        </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-gray-500 dark:text-gray-400 text-sm">
+                          <div className="text-gray-500 dark:text-gray-400 text-xs">
                             {formatDate(comment.createdAt)}
                           </div>
                           {comment.authorIp === ipAddress && (
@@ -598,37 +523,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                           )}
                         </div>
                       </div>
-                      {editingCommentId === comment.id ? (
-                        <div className="mt-2">
-                          <div className="flex gap-2">
-                            <textarea
-                              name="comment-edit"
-                              value={editedCommentContent}
-                              onChange={(e) => setEditedCommentContent(e.target.value)}
-                              onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-                              className="flex-1 p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 min-h-[60px] whitespace-pre-wrap resize-none"
-                              style={{ height: 'auto', minHeight: '60px' }}
-                            />
-                            <button
-                              onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
-                              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                            >
-                              저장
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingCommentId(null);
-                                setEditedCommentContent('');
-                              }}
-                              className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                            >
-                              취소
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="mt-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
-                      )}
+                      <p className="mt-1 text-gray-600 dark:text-gray-400 text-sm whitespace-pre-wrap break-words">
+                        {comment.content}
+                      </p>
                     </div>
                   ))
                 )}
