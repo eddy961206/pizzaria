@@ -358,7 +358,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       setEditingCommentId(null);
       setEditedCommentContent('');
     } catch (error) {
-      console.error('댓글 수정 중 에러 발��:', error);
+      console.error('댓글 수정 중 에러 발:', error);
       alert('댓글 수정에 실패했습니다.');
     }
   };
@@ -390,11 +390,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   }, [editingCommentId]);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
       {/* 게시글 헤더 - 수정/삭제 버튼 제거 */}
       <div className="flex items-center justify-between mb-4">
-        <div className="font-bold text-gray-900">{post.nickname}</div>
-        <div className="text-gray-500 text-sm">
+        <div className="font-bold text-gray-900 dark:text-gray-100">{post.nickname}</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm">
           {formatDate(post.createdAt)}
         </div>
       </div>
@@ -444,7 +444,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
             onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-            className="w-full p-2 border rounded text-gray-700 mb-2 min-h-[100px] whitespace-pre-wrap resize-none"
+            className="w-full p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 mb-2 min-h-[100px] whitespace-pre-wrap resize-none"
             style={{ height: 'auto', minHeight: '100px' }}
             required
           />
@@ -476,7 +476,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               className="w-full h-auto rounded-lg mb-4"
             />
           )}
-          <p className="mb-4 text-gray-800 whitespace-pre-wrap break-words">{post.content}</p>
+          <p className="mb-4 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{post.content}</p>
         </>
       )}
 
@@ -529,7 +529,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               placeholder="닉네임"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              className="w-full p-2 mb-2 border rounded text-gray-700"
+              className="w-full p-2 mb-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600"
               required
             />
             <div className="flex">
@@ -538,7 +538,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                 placeholder="댓글을 입력하세요"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 p-2 border rounded-l text-gray-700"
+                className="flex-1 p-2 border rounded-l text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600"
                 required
               />
               <button
@@ -558,9 +558,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               {comments.map(comment => (
                 <div key={comment.id} className="border-b pb-2">
                   <div className="flex items-center justify-between">
-                    <div className="font-bold text-gray-900">{comment.nickname}</div>
+                    <div className="font-bold text-gray-900 dark:text-gray-100">{comment.nickname}</div>
                     <div className="flex items-center gap-2">
-                      <div className="text-gray-500 text-sm">
+                      <div className="text-gray-500 dark:text-gray-400 text-sm">
                         {formatDate(comment.createdAt)}
                       </div>
                       {comment.authorIp === ipAddress && (
@@ -592,7 +592,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                           value={editedCommentContent}
                           onChange={(e) => setEditedCommentContent(e.target.value)}
                           onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-                          className="flex-1 p-2 border rounded text-gray-700 min-h-[60px] whitespace-pre-wrap resize-none"
+                          className="flex-1 p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 min-h-[60px] whitespace-pre-wrap resize-none"
                           style={{ height: 'auto', minHeight: '60px' }}
                         />
                         <button
@@ -613,7 +613,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                       </div>
                     </div>
                   ) : (
-                    <p className="mt-1 text-gray-800 whitespace-pre-wrap break-words">{comment.content}</p>
+                    <p className="mt-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
                   )}
                 </div>
               ))}
