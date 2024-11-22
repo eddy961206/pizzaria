@@ -129,7 +129,7 @@ export default function NewPostButton() {
                 required
               />
               <textarea
-                placeholder="내용을 입력하세요"
+                placeholder="맛있는 피자에 대한 이야기를 들려주세요!"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 className="w-full p-2 mb-4 border rounded h-32 resize-none text-gray-700"
@@ -150,7 +150,7 @@ export default function NewPostButton() {
                   onClick={() => fileInputRef.current?.click()}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                 >
-                  🖼️ 이미지 추가
+                  🍕🖼️ 맛난 피자 이미지 추가
                 </button>
                 
                 {previewUrl && (

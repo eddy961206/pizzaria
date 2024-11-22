@@ -449,6 +449,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             {/* 텍스트 영역 */}
             <textarea
               name="post-edit"
+              placeholder="내용을 입력하세요"
               value={editedContent}
               onChange={(e) => setEditedContent(e.target.value)}
               onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
