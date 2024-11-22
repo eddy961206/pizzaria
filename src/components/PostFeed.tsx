@@ -7,10 +7,12 @@ import { Post } from '@/types';
 import PostCard from './PostCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { subscribeToNewPosts } from './NewPostButton';
+import { useAnonymousAuth } from '@/hooks/useAnonymousAuth';
 
 const POSTS_PER_PAGE = 5;
 
 export default function PostFeed() {
+  const { authUser, loading } = useAnonymousAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -116,26 +118,32 @@ export default function PostFeed() {
   };
 
   return (
-    <InfiniteScroll
-      dataLength={posts.length}
-      next={loadMorePosts}
-      hasMore={hasMore}
-      loader={<div className="text-center py-4">게시글을 불러오는 중...</div>}
-      endMessage={
-        <div className="text-center py-4 text-gray-500">
-          더 이상 게시글이 없습니다 🍕
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        {posts.map(post => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
-            onDelete={handlePostDelete}  // 삭제 핸들러 전달
-          />
-        ))}
-      </div>
-    </InfiniteScroll>
+    <>
+      {loading ? (
+        <div className="text-center py-4">로딩 중...</div>
+      ) : (
+        <InfiniteScroll
+          dataLength={posts.length}
+          next={loadMorePosts}
+          hasMore={hasMore}
+          loader={<div className="text-center py-4">게시글을 불러오는 중...</div>}
+          endMessage={
+            <div className="text-center py-4 text-gray-500">
+              더 이상 게시글이 없습니다 🍕
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            {posts.map(post => (
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                onDelete={handlePostDelete}  // 삭제 핸들러 전달
+              />
+            ))}
+          </div>
+        </InfiniteScroll>
+      )}
+    </>
   );
 }

@@ -21,6 +21,7 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useIpAddress } from '@/hooks/useIpAddress';
 import LoadingSpinner from './LoadingSpinner';
+import { useAnonymousAuth } from '@/hooks/useAnonymousAuth';
 
 interface PostCardProps {
   post: Post;
@@ -47,6 +48,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImageRemoved, setIsImageRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { authUser, loading } = useAnonymousAuth();
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
@@ -393,14 +395,13 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
   // 작성자 확인 로직 수정
   useEffect(() => {
-    if (ipAddress && auth.currentUser) {
+    if (ipAddress && authUser) {
       setIsAuthor(
-        post.authorIp !== 'legacy-post' && 
         post.authorIp === ipAddress &&
-        post.authorId === auth.currentUser.uid
+        post.authorId === authUser.uid
       );
     }
-  }, [ipAddress, post.authorIp, post.authorId, auth.currentUser]);
+  }, [ipAddress, post.authorIp, post.authorId, authUser]);
 
   return (
     <>

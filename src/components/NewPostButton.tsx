@@ -6,8 +6,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '@/lib/firebase';
 import { useIpAddress } from '@/hooks/useIpAddress';
 import { Post } from '@/types';
-import Image from 'next/image';
 import LoadingSpinner from './LoadingSpinner';
+import { useAnonymousAuth } from '@/hooks/useAnonymousAuth';
 
 // 이벤트 버스 생성
 type PostEventCallback = (post: Post) => void;
@@ -33,6 +33,7 @@ export default function NewPostButton() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ipAddress = useIpAddress();
+  const { authUser, loading } = useAnonymousAuth();
 
   // 이미지 선택 핸들러
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +64,7 @@ export default function NewPostButton() {
   // 게시글 작성 함수
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !nickname.trim() || !ipAddress) return;
+    if (!content.trim() || !nickname.trim() || !ipAddress || !authUser) return;
 
     setIsLoading(true);
     try {
@@ -83,7 +84,7 @@ export default function NewPostButton() {
         likes: 0,
         comments: 0,
         authorIp: ipAddress,
-        authorId: auth.currentUser?.uid || '',
+        authorId: authUser.uid,
         imageUrl: imageUrl || null  // 이미지 URL 추가
       };
 
