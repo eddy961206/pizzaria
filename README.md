@@ -105,6 +105,9 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
           allow read: if true;
           allow write: if request.resource.size < 5 * 1024 * 1024
                       && request.resource.contentType.matches('image/.*');
+          allow update: if request.resource.size < 5 * 1024 * 1024
+                      && request.resource.contentType.matches('image/.*');
+          allow delete: if true;            
         }
       }
     }
@@ -117,6 +120,19 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
 - 게시글 수정은 좋아요와 댓글 수 업데이트만 허용합니다.
 - 댓글 생성 시 필수 필드를 검증합니다.
 - Storage에는 5MB 이하의 이미지 파일만 업로드할 수 있습니다.
+
+7. 익명 인증 설정
+
+Firebase Console에서 Authentication 설정 :
+
+1. Firebase Console 접속
+2. 프로젝트 선택 
+3. 왼쪽 메뉴에서 "Authentication" 선택
+4. "Sign-in method" 탭 클릭
+5. "Add new provider" 또는 "새 제공업체 추가" 클릭
+6. "Anonymous" 또는 "익명" 선택
+7. "Enable" 또는 "사용" 토글 버튼을 켜기
+8. "Save" 또는 "저장" 클릭
 
 
 ## 라이선스

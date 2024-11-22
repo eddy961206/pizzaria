@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { useIpAddress } from '@/hooks/useIpAddress';
 import { Post } from '@/types';
 import Image from 'next/image';
@@ -83,6 +83,7 @@ export default function NewPostButton() {
         likes: 0,
         comments: 0,
         authorIp: ipAddress,
+        authorId: auth.currentUser?.uid || '',
         imageUrl: imageUrl || null  // 이미지 URL 추가
       };
 

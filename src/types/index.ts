@@ -8,6 +8,7 @@ export interface Post {
   likes: number;
   comments: number;
   authorIp: string;
+  authorId: string;
 }
 
 // 댓글 타입 정의
@@ -18,4 +19,5 @@ export interface Comment {
   nickname: string;
   createdAt: number;
   authorIp: string;
+  authorId: string;
 }

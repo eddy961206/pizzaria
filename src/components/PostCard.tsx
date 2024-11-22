@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Post, Comment } from '@/types';
 import { formatDate } from '@/utils/dateFormat';
 import { FaHeart, FaRegHeart, FaComment } from 'react-icons/fa';
-import { db, storage } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { 
   doc, 
   updateDoc, 
@@ -152,28 +152,25 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     setShowComments(!showComments);
   };
 
-  // 댓글 작성 함수
+  // 댓글 작성 함수 수정
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !nickname.trim() || !ipAddress) return;
+    if (!newComment.trim() || !nickname.trim() || !ipAddress || !auth.currentUser) return;
 
     const commentData = {
       postId: post.id,
       content: newComment.trim(),
       nickname: nickname.trim(),
       createdAt: Date.now(),
-      authorIp: ipAddress
+      authorIp: ipAddress,
+      authorId: auth.currentUser.uid  // 익명 사용자 ID 추가
     };
 
     try {
-      // 트랜잭션으로 처리하여 데이터 일관성 보장
       const batch = writeBatch(db);
-      
-      // 새 댓글 추가
       const commentRef = doc(collection(db, 'comments'));
       batch.set(commentRef, commentData);
       
-      // 게시글의 댓글 수 업데이트
       const postRef = doc(db, 'posts', post.id);
       batch.update(postRef, {
         comments: increment(1)
@@ -181,7 +178,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
       await batch.commit();
 
-      // UI 업데이트
       const newCommentWithId = { id: commentRef.id, ...commentData };
       setComments(prev => [newCommentWithId, ...prev]);
       setCommentsCount(prev => prev + 1);
@@ -394,6 +390,17 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       }
     }
   }, [editingCommentId]);
+
+  // 작성자 확인 로직 수정
+  useEffect(() => {
+    if (ipAddress && auth.currentUser) {
+      setIsAuthor(
+        post.authorIp !== 'legacy-post' && 
+        post.authorIp === ipAddress &&
+        post.authorId === auth.currentUser.uid
+      );
+    }
+  }, [ipAddress, post.authorIp, post.authorId, auth.currentUser]);
 
   return (
     <>
