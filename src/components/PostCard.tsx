@@ -36,6 +36,10 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [commentsCount, setCommentsCount] = useState(post.comments);
   const ipAddress = useIpAddress();
   const [isAuthor, setIsAuthor] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(post.content);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editedCommentContent, setEditedCommentContent] = useState('');
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
@@ -234,6 +238,50 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
+  // 게시글 수정 함수
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editedContent.trim() || !isAuthor) return;
+
+    try {
+      const postRef = doc(db, 'posts', post.id);
+      await updateDoc(postRef, {
+        content: editedContent.trim()
+      });
+      
+      post.content = editedContent.trim();
+      setIsEditing(false);
+    } catch (error) {
+      console.error('게시글 수정 중 에러 발생:', error);
+      alert('게시글 수정에 실패했습니다.');
+    }
+  };
+
+  // 댓글 수정 함수
+  const handleCommentEdit = async (commentId: string, newContent: string) => {
+    if (!newContent.trim()) return;
+
+    try {
+      const commentRef = doc(db, 'comments', commentId);
+      await updateDoc(commentRef, {
+        content: newContent.trim()
+      });
+
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment.id === commentId 
+            ? { ...comment, content: newContent.trim() } 
+            : comment
+        )
+      );
+      setEditingCommentId(null);
+      setEditedCommentContent('');
+    } catch (error) {
+      console.error('댓글 수정 중 에러 발생:', error);
+      alert('댓글 수정에 실패했습니다.');
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
       {/* 게시글 헤더 */}
@@ -244,18 +292,56 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             {formatDate(post.createdAt)}
           </div>
           {post.authorIp !== 'legacy-post' && isAuthor && (
-            <button
-              onClick={handleDeletePost}
-              className="text-red-500 hover:text-red-700 text-sm"
-            >
-              삭제
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="text-blue-500 hover:text-blue-700 text-sm"
+              >
+                수정
+              </button>
+              <button
+                onClick={handleDeletePost}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                삭제
+              </button>
+            </div>
           )}
         </div>
       </div>
 
       {/* 게시글 내용 */}
-      <p className="mb-4 text-gray-800">{post.content}</p>
+      {isEditing ? (
+        <form onSubmit={handleEditSubmit} className="mb-4">
+          <textarea
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            className="w-full p-2 border rounded text-gray-700 mb-2"
+            required
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditing(false);
+                setEditedContent(post.content);
+              }}
+              className="px-3 py-1 text-gray-600 hover:text-gray-800"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              저장
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className="mb-4 text-gray-800">{post.content}</p>
+      )}
+
       {post.imageUrl && (
         <img 
           src={post.imageUrl} 
@@ -329,16 +415,55 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                         {formatDate(comment.createdAt)}
                       </div>
                       {comment.authorIp === ipAddress && (
-                        <button
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="text-red-500 hover:text-red-700 text-sm"
-                        >
-                          삭제
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingCommentId(comment.id);
+                              setEditedCommentContent(comment.content);
+                            }}
+                            className="text-blue-500 hover:text-blue-700 text-sm"
+                          >
+                            수정
+                          </button>
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            삭제
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <p className="mt-1 text-gray-800">{comment.content}</p>
+                  {editingCommentId === comment.id ? (
+                    <div className="mt-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editedCommentContent}
+                          onChange={(e) => setEditedCommentContent(e.target.value)}
+                          className="flex-1 p-2 border rounded text-gray-700"
+                        />
+                        <button
+                          onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
+                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                          저장
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditedCommentContent('');
+                          }}
+                          className="px-3 py-1 text-gray-600 hover:text-gray-800"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-gray-800">{comment.content}</p>
+                  )}
                 </div>
               ))}
             </div>
