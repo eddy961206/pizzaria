@@ -7,6 +7,7 @@ import { db, storage } from '@/lib/firebase';
 import { useIpAddress } from '@/hooks/useIpAddress';
 import { Post } from '@/types';
 import Image from 'next/image';
+import LoadingSpinner from './LoadingSpinner';
 
 // 이벤트 버스 생성
 type PostEventCallback = (post: Post) => void;
@@ -96,7 +97,6 @@ export default function NewPostButton() {
       setSelectedImage(null);
       setPreviewUrl(null);
       setIsModalOpen(false);
-      alert('게시글이 등록되었습니다.');
     } catch (error) {
       console.error('게시글 작성 중 에러 발생:', error);
       alert('게시글 작성에 실패했습니다. 다시 시도해주세요.');
@@ -107,6 +107,7 @@ export default function NewPostButton() {
 
   return (
     <>
+      {isLoading && <LoadingSpinner />}
       <button
         onClick={() => setIsModalOpen(true)}
         className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600"

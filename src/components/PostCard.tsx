@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useIpAddress } from '@/hooks/useIpAddress';
+import LoadingSpinner from './LoadingSpinner';
 
 interface PostCardProps {
   post: Post;
@@ -45,6 +46,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImageRemoved, setIsImageRemoved] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
@@ -205,6 +207,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
 
     if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      setIsSubmitting(true);
       try {
         // 이미지가 있는 경우 Storage에서도 삭제
         if (post.imageUrl) {
@@ -214,10 +217,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
         await deleteDoc(doc(db, 'posts', post.id));
         onDelete(post.id);
-        alert('게시글이 삭제되었습니다.');
       } catch (error) {
         console.error('게시글 삭제 중 에러 발생:', error);
         alert('게시글 삭제에 실패했습니다.');
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -279,6 +283,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     e.preventDefault();
     if (!editedContent.trim() || !isAuthor) return;
 
+    setIsSubmitting(true);
     try {
       const updateData: { content: string; imageUrl?: string | null } = {
         content: editedContent.trim()
@@ -319,10 +324,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       setSelectedImage(null);
       setPreviewUrl(null);
       setIsImageRemoved(false);
-      alert('게시글이 수정되었습니다.');
     } catch (error) {
       console.error('게시글 수정 중 에러 발생:', error);
       alert('게시글 수정에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -390,237 +396,240 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   }, [editingCommentId]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-      {/* 게시글 헤더 - 수정/삭제 버튼 제거 */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="font-bold text-gray-900 dark:text-gray-100">{post.nickname}</div>
-        <div className="text-gray-500 dark:text-gray-400 text-sm">
-          {formatDate(post.createdAt)}
-        </div>
-      </div>
-
-      {/* 게시글 내용 */}
-      {isEditing ? (
-        <form onSubmit={handleEditSubmit} className="mb-4">
-          {/* 이미지 업로드 버튼 */}
-          <div className="mb-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              ref={fileInputRef}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-            >
-              🖼️ 이미지 {post.imageUrl || previewUrl ? '변경' : '추가'}
-            </button>
+    <>
+      {isSubmitting && <LoadingSpinner />}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        {/* 게시글 헤더 - 수정/삭제 버튼 제거 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="font-bold text-gray-900 dark:text-gray-100">{post.nickname}</div>
+          <div className="text-gray-500 dark:text-gray-400 text-sm">
+            {formatDate(post.createdAt)}
           </div>
+        </div>
 
-          {/* 현재 이미지 또는 새로 선택된 이미지 */}
-          {!isImageRemoved && (previewUrl || post.imageUrl) && (
-            <div className="mb-4 relative">
-              <img
-                src={previewUrl || post.imageUrl}
-                alt="게시글 이미지"
-                className="w-full h-auto rounded-lg"
+        {/* 게시글 내용 */}
+        {isEditing ? (
+          <form onSubmit={handleEditSubmit} className="mb-4">
+            {/* 이미지 업로드 버튼 */}
+            <div className="mb-4">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                ref={fileInputRef}
+                className="hidden"
               />
               <button
                 type="button"
-                onClick={handleRemoveImage}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
               >
-                X
+                🖼️ 이미지 {post.imageUrl || previewUrl ? '변경' : '추가'}
               </button>
             </div>
-          )}
 
-          {/* 텍스트 영역 */}
-          <textarea
-            name="post-edit"
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
-            onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-            className="w-full p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 mb-2 min-h-[100px] whitespace-pre-wrap resize-none"
-            style={{ height: 'auto', minHeight: '100px' }}
-            required
-          />
+            {/* 현재 이미지 또는 새로 선택된 이미지 */}
+            {!isImageRemoved && (previewUrl || post.imageUrl) && (
+              <div className="mb-4 relative">
+                <img
+                  src={previewUrl || post.imageUrl}
+                  alt="게시글 이미지"
+                  className="w-full h-auto rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  X
+                </button>
+              </div>
+            )}
 
-          {/* 버튼 영역 */}
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={handleEditCancel}
-              className="px-3 py-1 text-gray-600 hover:text-gray-800"
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              저장
-            </button>
-          </div>
-        </form>
-      ) : (
-        <>
-          {/* 이미지를 본문 위로 이동 */}
-          {post.imageUrl && (
-            <img 
-              src={post.imageUrl} 
-              alt="게시글 이미지" 
-              className="w-full h-auto rounded-lg mb-4"
-            />
-          )}
-          <p className="mb-4 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{post.content}</p>
-        </>
-      )}
-
-      {/* 좋아요, 댓글, 수정/삭제 버튼을 한 줄에 배치 */}
-      <div className="flex items-center mb-4">
-        {/* 좋아요와 댓글 버튼은 왼쪽에 */}
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={toggleLike}
-            className="flex items-center space-x-1 text-gray-500 hover:text-red-500"
-          >
-            {isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
-            <span>{likesCount}</span>
-          </button>
-          <button 
-            onClick={loadComments}
-            className="flex items-center space-x-1 text-gray-500 hover:text-blue-500"
-          >
-            <FaComment />
-            <span>{commentsCount}</span>
-          </button>
-        </div>
-
-        {/* 수정/삭제 버튼은 오른쪽에 - 수정 모드가 아닐 때만 표시 */}
-        {post.authorIp !== 'legacy-post' && isAuthor && !isEditing && (
-          <div className="flex gap-2 ml-auto">
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="text-blue-500 hover:text-blue-700 text-sm"
-            >
-              수정
-            </button>
-            <button
-              onClick={handleDeletePost}
-              className="text-red-500 hover:text-red-700 text-sm"
-            >
-              삭제
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 댓글 섹션 */}
-      {showComments && (
-        <div className="mt-4">
-          {/* 댓글 작성 폼 */}
-          <form onSubmit={handleCommentSubmit} className="mb-4">
-            <input
-              type="text"
-              placeholder="닉네임"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              className="w-full p-2 mb-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600"
+            {/* 텍스트 영역 */}
+            <textarea
+              name="post-edit"
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
+              className="w-full p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 mb-2 min-h-[100px] whitespace-pre-wrap resize-none"
+              style={{ height: 'auto', minHeight: '100px' }}
               required
             />
-            <div className="flex">
-              <input
-                type="text"
-                placeholder="댓글을 입력하세요"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 p-2 border rounded-l text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600"
-                required
-              />
+
+            {/* 버튼 영역 */}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleEditCancel}
+                className="px-3 py-1 text-gray-600 hover:text-gray-800"
+              >
+                취소
+              </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded-r hover:bg-blue-600"
+                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
-                작성
+                저장
               </button>
             </div>
           </form>
+        ) : (
+          <>
+            {/* 이미지를 본문 위로 이동 */}
+            {post.imageUrl && (
+              <img 
+                src={post.imageUrl} 
+                alt="게시글 이미지" 
+                className="w-full h-auto rounded-lg mb-4"
+              />
+            )}
+            <p className="mb-4 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{post.content}</p>
+          </>
+        )}
 
-          {/* 댓글 목록 */}
-          {isLoading ? (
-            <div className="text-center py-4">댓글을 불러오는 중...</div>
-          ) : (
-            <div className="space-y-4">
-              {comments.map(comment => (
-                <div key={comment.id} className="border-b pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-gray-900 dark:text-gray-100">{comment.nickname}</div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-gray-500 dark:text-gray-400 text-sm">
-                        {formatDate(comment.createdAt)}
-                      </div>
-                      {comment.authorIp === ipAddress && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingCommentId(comment.id);
-                              setEditedCommentContent(comment.content);
-                            }}
-                            className="text-blue-500 hover:text-blue-700 text-sm"
-                          >
-                            수정
-                          </button>
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="text-red-500 hover:text-red-700 text-sm"
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {editingCommentId === comment.id ? (
-                    <div className="mt-2">
-                      <div className="flex gap-2">
-                        <textarea
-                          name="comment-edit"
-                          value={editedCommentContent}
-                          onChange={(e) => setEditedCommentContent(e.target.value)}
-                          onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-                          className="flex-1 p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 min-h-[60px] whitespace-pre-wrap resize-none"
-                          style={{ height: 'auto', minHeight: '60px' }}
-                        />
-                        <button
-                          onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                          저장
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingCommentId(null);
-                            setEditedCommentContent('');
-                          }}
-                          className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                        >
-                          취소
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
-                  )}
-                </div>
-              ))}
+        {/* 좋아요, 댓글, 수정/삭제 버튼을 한 줄에 배치 */}
+        <div className="flex items-center mb-4">
+          {/* 좋아요와 댓글 버튼은 왼쪽에 */}
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={toggleLike}
+              className="flex items-center space-x-1 text-gray-500 hover:text-red-500"
+            >
+              {isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
+              <span>{likesCount}</span>
+            </button>
+            <button 
+              onClick={loadComments}
+              className="flex items-center space-x-1 text-gray-500 hover:text-blue-500"
+            >
+              <FaComment />
+              <span>{commentsCount}</span>
+            </button>
+          </div>
+
+          {/* 수정/삭제 버튼은 오른쪽에 - 수정 모드가 아닐 때만 표시 */}
+          {post.authorIp !== 'legacy-post' && isAuthor && !isEditing && (
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="text-blue-500 hover:text-blue-700 text-sm"
+              >
+                수정
+              </button>
+              <button
+                onClick={handleDeletePost}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                삭제
+              </button>
             </div>
           )}
         </div>
-      )}
-    </div>
+
+        {/* 댓글 섹션 */}
+        {showComments && (
+          <div className="mt-4">
+            {/* 댓글 작성 폼 */}
+            <form onSubmit={handleCommentSubmit} className="mb-4">
+              <input
+                type="text"
+                placeholder="닉네임"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="w-full p-2 mb-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600"
+                required
+              />
+              <div className="flex">
+                <input
+                  type="text"
+                  placeholder="댓글을 입력하세요"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="flex-1 p-2 border rounded-l text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-r hover:bg-blue-600"
+                >
+                  작성
+                </button>
+              </div>
+            </form>
+
+            {/* 댓글 목록 */}
+            {isLoading ? (
+              <div className="text-center py-4">댓글을 불러오는 중...</div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map(comment => (
+                  <div key={comment.id} className="border-b pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-gray-900 dark:text-gray-100">{comment.nickname}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-gray-500 dark:text-gray-400 text-sm">
+                          {formatDate(comment.createdAt)}
+                        </div>
+                        {comment.authorIp === ipAddress && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditedCommentContent(comment.content);
+                              }}
+                              className="text-blue-500 hover:text-blue-700 text-sm"
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {editingCommentId === comment.id ? (
+                      <div className="mt-2">
+                        <div className="flex gap-2">
+                          <textarea
+                            name="comment-edit"
+                            value={editedCommentContent}
+                            onChange={(e) => setEditedCommentContent(e.target.value)}
+                            onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
+                            className="flex-1 p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 min-h-[60px] whitespace-pre-wrap resize-none"
+                            style={{ height: 'auto', minHeight: '60px' }}
+                          />
+                          <button
+                            onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingCommentId(null);
+                              setEditedCommentContent('');
+                            }}
+                            className="px-3 py-1 text-gray-600 hover:text-gray-800"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
