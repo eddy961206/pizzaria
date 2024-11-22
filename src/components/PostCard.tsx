@@ -564,68 +564,74 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               <div className="text-center py-4">댓글을 불러오는 중...</div>
             ) : (
               <div className="space-y-4">
-                {comments.map(comment => (
-                  <div key={comment.id} className="border-b pb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="font-bold text-gray-900 dark:text-gray-100">{comment.nickname}</div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-gray-500 dark:text-gray-400 text-sm">
-                          {formatDate(comment.createdAt)}
+                {comments.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                    아직 댓글이 없습니다. 가장 먼저 댓글을 달아보세요! 🍕
+                  </div>
+                ) : (
+                  comments.map(comment => (
+                    <div key={comment.id} className="border-b pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-gray-900 dark:text-gray-100">{comment.nickname}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-gray-500 dark:text-gray-400 text-sm">
+                            {formatDate(comment.createdAt)}
+                          </div>
+                          {comment.authorIp === ipAddress && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingCommentId(comment.id);
+                                  setEditedCommentContent(comment.content);
+                                }}
+                                className="text-blue-500 hover:text-blue-700 text-sm"
+                              >
+                                수정
+                              </button>
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-red-500 hover:text-red-700 text-sm"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        {comment.authorIp === ipAddress && (
+                      </div>
+                      {editingCommentId === comment.id ? (
+                        <div className="mt-2">
                           <div className="flex gap-2">
+                            <textarea
+                              name="comment-edit"
+                              value={editedCommentContent}
+                              onChange={(e) => setEditedCommentContent(e.target.value)}
+                              onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
+                              className="flex-1 p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 min-h-[60px] whitespace-pre-wrap resize-none"
+                              style={{ height: 'auto', minHeight: '60px' }}
+                            />
+                            <button
+                              onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
+                              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                              저장
+                            </button>
                             <button
                               onClick={() => {
-                                setEditingCommentId(comment.id);
-                                setEditedCommentContent(comment.content);
+                                setEditingCommentId(null);
+                                setEditedCommentContent('');
                               }}
-                              className="text-blue-500 hover:text-blue-700 text-sm"
+                              className="px-3 py-1 text-gray-600 hover:text-gray-800"
                             >
-                              수정
-                            </button>
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              삭제
+                              취소
                             </button>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    {editingCommentId === comment.id ? (
-                      <div className="mt-2">
-                        <div className="flex gap-2">
-                          <textarea
-                            name="comment-edit"
-                            value={editedCommentContent}
-                            onChange={(e) => setEditedCommentContent(e.target.value)}
-                            onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
-                            className="flex-1 p-2 border rounded text-gray-700 dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 min-h-[60px] whitespace-pre-wrap resize-none"
-                            style={{ height: 'auto', minHeight: '60px' }}
-                          />
-                          <button
-                            onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                          >
-                            저장
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingCommentId(null);
-                              setEditedCommentContent('');
-                            }}
-                            className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                          >
-                            취소
-                          </button>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="mt-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
-                    )}
-                  </div>
-                ))}
+                      ) : (
+                        <p className="mt-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
