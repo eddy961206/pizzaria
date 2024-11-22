@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Post, Comment } from '@/types';
 import { formatDate } from '@/utils/dateFormat';
 import { FaHeart, FaRegHeart, FaComment } from 'react-icons/fa';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { 
   doc, 
   updateDoc, 
@@ -18,6 +18,7 @@ import {
   increment,
   deleteDoc
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useIpAddress } from '@/hooks/useIpAddress';
 
 interface PostCardProps {
@@ -40,6 +41,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [editedContent, setEditedContent] = useState(post.content);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedCommentContent, setEditedCommentContent] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
@@ -238,22 +242,83 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
-  // 게시글 수정 함수
+  // 이미지 선택 핸들러
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB 제한
+        alert('파일 크기는 5MB를 초과할 수 없습니다.');
+        return;
+      }
+      setSelectedImage(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  // 이미지 제거 핸들러
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 게시글 수정 함수 수정
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editedContent.trim() || !isAuthor) return;
 
     try {
+      let imageUrl = post.imageUrl;
+
+      // 기존 이미지 삭제가 선택된 경우
+      if (post.imageUrl && !previewUrl && !selectedImage) {
+        const oldImageRef = ref(storage, post.imageUrl);
+        await deleteObject(oldImageRef);
+        imageUrl = undefined;
+      }
+
+      // 새 이미지가 선택된 경우
+      if (selectedImage) {
+        // 기존 이미지가 있다면 삭제
+        if (post.imageUrl) {
+          const oldImageRef = ref(storage, post.imageUrl);
+          await deleteObject(oldImageRef);
+        }
+
+        // 새 이미지 업로드
+        const imageRef = ref(storage, `posts/${Date.now()}_${selectedImage.name}`);
+        await uploadBytes(imageRef, selectedImage);
+        imageUrl = await getDownloadURL(imageRef);
+      }
+
       const postRef = doc(db, 'posts', post.id);
       await updateDoc(postRef, {
-        content: editedContent.trim()
+        content: editedContent.trim(),
+        imageUrl: imageUrl
       });
       
       post.content = editedContent.trim();
+      post.imageUrl = imageUrl;
       setIsEditing(false);
+      setSelectedImage(null);
+      setPreviewUrl(null);
     } catch (error) {
-      console.error('게시글 수정 중 에��� 발생:', error);
+      console.error('게시글 수정 중 에러 발생:', error);
       alert('게시글 수정에 실패했습니다.');
+    }
+  };
+
+  // 수정 취소 핸들러
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditedContent(post.content);
+    setSelectedImage(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -348,6 +413,43 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       {/* 게시글 내용 */}
       {isEditing ? (
         <form onSubmit={handleEditSubmit} className="mb-4">
+          {/* 현재 이미지 또는 새로 선택된 이미지 미리보기 */}
+          {(previewUrl || post.imageUrl) && (
+            <div className="mb-4 relative">
+              <img
+                src={previewUrl || post.imageUrl}
+                alt="게시글 이미지"
+                className="w-full h-auto rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* 이미지 업로드 버튼 */}
+          <div className="mb-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              ref={fileInputRef}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+            >
+              🖼️ 이미지 {post.imageUrl || previewUrl ? '변경' : '추가'}
+            </button>
+          </div>
+
+          {/* 텍스트 영역 */}
           <textarea
             name="post-edit"
             value={editedContent}
@@ -357,13 +459,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             style={{ height: 'auto', minHeight: '100px' }}
             required
           />
+
+          {/* 버튼 영역 */}
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => {
-                setIsEditing(false);
-                setEditedContent(post.content);
-              }}
+              onClick={handleEditCancel}
               className="px-3 py-1 text-gray-600 hover:text-gray-800"
             >
               취소
