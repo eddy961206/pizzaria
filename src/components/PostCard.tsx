@@ -336,6 +336,15 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         </div>
       </div>
 
+      {/* 이미지를 본문 위로 이동 */}
+      {post.imageUrl && (
+        <img 
+          src={post.imageUrl} 
+          alt="게시글 이미지" 
+          className="w-full h-auto rounded-lg mb-4"
+        />
+      )}
+
       {/* 게시글 내용 */}
       {isEditing ? (
         <form onSubmit={handleEditSubmit} className="mb-4">
@@ -369,14 +378,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         </form>
       ) : (
         <p className="mb-4 text-gray-800 whitespace-pre-wrap break-words">{post.content}</p>
-      )}
-
-      {post.imageUrl && (
-        <img 
-          src={post.imageUrl} 
-          alt="게시글 이미지" 
-          className="w-full h-auto rounded-lg mb-4"
-        />
       )}
 
       {/* 좋아요와 댓글 */}
