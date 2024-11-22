@@ -44,6 +44,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImageRemoved, setIsImageRemoved] = useState(false);
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
@@ -205,8 +206,14 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
     if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
       try {
+        // 이미지가 있는 경우 Storage에서도 삭제
+        if (post.imageUrl) {
+          const imageRef = ref(storage, post.imageUrl);
+          await deleteObject(imageRef).catch(console.error);
+        }
+
         await deleteDoc(doc(db, 'posts', post.id));
-        onDelete(post.id);  // 부모 컴포넌트에 삭제 알림
+        onDelete(post.id);
       } catch (error) {
         console.error('게시글 삭제 중 에러 발생:', error);
         alert('게시글 삭제에 실패했습니다.');
@@ -256,10 +263,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
-  // 이미지 제거 핸들러
+  // 이미지 제거 핸들러 수정
   const handleRemoveImage = () => {
     setSelectedImage(null);
     setPreviewUrl(null);
+    setIsImageRemoved(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -271,13 +279,18 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     if (!editedContent.trim() || !isAuthor) return;
 
     try {
-      let imageUrl = post.imageUrl;
+      const updateData: { content: string; imageUrl: string | null } = {
+        content: editedContent.trim(),
+        imageUrl: post.imageUrl  // 기본값으로 현재 이미지 URL 사용
+      };
 
-      // 기존 이미지 삭제가 선택된 경우
-      if (post.imageUrl && !previewUrl && !selectedImage) {
-        const oldImageRef = ref(storage, post.imageUrl);
-        await deleteObject(oldImageRef);
-        imageUrl = undefined;
+      // 이미지가 제거된 경우
+      if (isImageRemoved) {
+        if (post.imageUrl) {
+          const oldImageRef = ref(storage, post.imageUrl);
+          await deleteObject(oldImageRef).catch(console.error);
+        }
+        updateData.imageUrl = null;  // undefined 대신 null 사용
       }
 
       // 새 이미지가 선택된 경우
@@ -285,38 +298,39 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         // 기존 이미지가 있다면 삭제
         if (post.imageUrl) {
           const oldImageRef = ref(storage, post.imageUrl);
-          await deleteObject(oldImageRef);
+          await deleteObject(oldImageRef).catch(console.error);
         }
 
         // 새 이미지 업로드
         const imageRef = ref(storage, `posts/${Date.now()}_${selectedImage.name}`);
         await uploadBytes(imageRef, selectedImage);
-        imageUrl = await getDownloadURL(imageRef);
+        updateData.imageUrl = await getDownloadURL(imageRef);
       }
 
       const postRef = doc(db, 'posts', post.id);
-      await updateDoc(postRef, {
-        content: editedContent.trim(),
-        imageUrl: imageUrl
-      });
+      await updateDoc(postRef, updateData);
       
-      post.content = editedContent.trim();
-      post.imageUrl = imageUrl;
+      // UI 업데이트
+      post.content = updateData.content;
+      post.imageUrl = updateData.imageUrl|| undefined;
+      
       setIsEditing(false);
       setSelectedImage(null);
       setPreviewUrl(null);
+      setIsImageRemoved(false);
     } catch (error) {
       console.error('게시글 수정 중 에러 발생:', error);
       alert('게시글 수정에 실패했습니다.');
     }
   };
 
-  // 수정 취소 핸들러
+  // 수정 취소 핸들러 수정
   const handleEditCancel = () => {
     setIsEditing(false);
     setEditedContent(post.content);
     setSelectedImage(null);
     setPreviewUrl(null);
+    setIsImageRemoved(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -401,36 +415,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         </div>
       </div>
 
-      {/* 이미지를 본문 위로 이동 */}
-      {post.imageUrl && (
-        <img 
-          src={post.imageUrl} 
-          alt="게시글 이미지" 
-          className="w-full h-auto rounded-lg mb-4"
-        />
-      )}
-
       {/* 게시글 내용 */}
       {isEditing ? (
         <form onSubmit={handleEditSubmit} className="mb-4">
-          {/* 현재 이미지 또는 새로 선택된 이미지 미리보기 */}
-          {(previewUrl || post.imageUrl) && (
-            <div className="mb-4 relative">
-              <img
-                src={previewUrl || post.imageUrl}
-                alt="게시글 이미지"
-                className="w-full h-auto rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
           {/* 이미지 업로드 버튼 */}
           <div className="mb-4">
             <input
@@ -448,6 +435,24 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               🖼️ 이미지 {post.imageUrl || previewUrl ? '변경' : '추가'}
             </button>
           </div>
+
+          {/* 현재 이미지 또는 새로 선택된 이미지 */}
+          {!isImageRemoved && (previewUrl || post.imageUrl) && (
+            <div className="mb-4 relative">
+              <img
+                src={previewUrl || post.imageUrl}
+                alt="게시글 이미지"
+                className="w-full h-auto rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* 텍스트 영역 */}
           <textarea
@@ -478,7 +483,17 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </form>
       ) : (
-        <p className="mb-4 text-gray-800 whitespace-pre-wrap break-words">{post.content}</p>
+        <>
+          {/* 이미지를 본문 위로 이동 */}
+          {post.imageUrl && (
+            <img 
+              src={post.imageUrl} 
+              alt="게시글 이미지" 
+              className="w-full h-auto rounded-lg mb-4"
+            />
+          )}
+          <p className="mb-4 text-gray-800 whitespace-pre-wrap break-words">{post.content}</p>
+        </>
       )}
 
       {/* 좋아요와 댓글 */}
