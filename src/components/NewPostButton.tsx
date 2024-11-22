@@ -96,6 +96,7 @@ export default function NewPostButton() {
       setSelectedImage(null);
       setPreviewUrl(null);
       setIsModalOpen(false);
+      alert('게시글이 등록되었습니다.');
     } catch (error) {
       console.error('게시글 작성 중 에러 발생:', error);
       alert('게시글 작성에 실패했습니다. 다시 시도해주세요.');

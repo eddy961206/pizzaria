@@ -214,6 +214,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
         await deleteDoc(doc(db, 'posts', post.id));
         onDelete(post.id);
+        alert('게시글이 삭제되었습니다.');
       } catch (error) {
         console.error('게시글 삭제 중 에러 발생:', error);
         alert('게시글 삭제에 실패했습니다.');
@@ -279,9 +280,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     if (!editedContent.trim() || !isAuthor) return;
 
     try {
-      const updateData: { content: string; imageUrl: string | null } = {
-        content: editedContent.trim(),
-        imageUrl: post.imageUrl  // 기본값으로 현재 이미지 URL 사용
+      const updateData: { content: string; imageUrl?: string | null } = {
+        content: editedContent.trim()
       };
 
       // 이미지가 제거된 경우
@@ -290,12 +290,10 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           const oldImageRef = ref(storage, post.imageUrl);
           await deleteObject(oldImageRef).catch(console.error);
         }
-        updateData.imageUrl = null;  // undefined 대신 null 사용
+        updateData.imageUrl = null;
       }
-
       // 새 이미지가 선택된 경우
-      if (selectedImage) {
-        // 기존 이미지가 있다면 삭제
+      else if (selectedImage) {
         if (post.imageUrl) {
           const oldImageRef = ref(storage, post.imageUrl);
           await deleteObject(oldImageRef).catch(console.error);
@@ -306,18 +304,22 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         await uploadBytes(imageRef, selectedImage);
         updateData.imageUrl = await getDownloadURL(imageRef);
       }
+      // 이미지 관련 변경이 없는 경우 imageUrl 필드를 업데이트하지 않음
 
       const postRef = doc(db, 'posts', post.id);
       await updateDoc(postRef, updateData);
       
       // UI 업데이트
       post.content = updateData.content;
-      post.imageUrl = updateData.imageUrl|| undefined;
+      if ('imageUrl' in updateData) {
+        post.imageUrl = updateData.imageUrl || undefined;
+      }
       
       setIsEditing(false);
       setSelectedImage(null);
       setPreviewUrl(null);
       setIsImageRemoved(false);
+      alert('게시글이 수정되었습니다.');
     } catch (error) {
       console.error('게시글 수정 중 에러 발생:', error);
       alert('게시글 수정에 실패했습니다.');
@@ -356,7 +358,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       setEditingCommentId(null);
       setEditedCommentContent('');
     } catch (error) {
-      console.error('댓글 수정 중 에러 발생:', error);
+      console.error('댓글 수정 중 에러 발��:', error);
       alert('댓글 수정에 실패했습니다.');
     }
   };
@@ -431,7 +433,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                 onClick={handleRemoveImage}
                 className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
               >
-                ✕
+                X
               </button>
             </div>
           )}
@@ -498,8 +500,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           </button>
         </div>
 
-        {/* 수정/삭제 버튼은 오른쪽에 */}
-        {post.authorIp !== 'legacy-post' && isAuthor && (
+        {/* 수정/삭제 버튼은 오른쪽에 - 수정 모드가 아닐 때만 표시 */}
+        {post.authorIp !== 'legacy-post' && isAuthor && !isEditing && (
           <div className="flex gap-2 ml-auto">
             <button
               onClick={() => setIsEditing(!isEditing)}
