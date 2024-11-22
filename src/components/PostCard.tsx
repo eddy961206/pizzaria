@@ -9,7 +9,6 @@ import {
   doc, 
   updateDoc, 
   collection, 
-  addDoc, 
   getDocs, 
   query, 
   where, 
@@ -48,7 +47,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImageRemoved, setIsImageRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { authUser, loading } = useAnonymousAuth();
+  const { authUser } = useAnonymousAuth();
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {

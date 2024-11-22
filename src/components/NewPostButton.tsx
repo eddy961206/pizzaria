@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { useIpAddress } from '@/hooks/useIpAddress';
 import { Post } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
@@ -33,7 +33,7 @@ export default function NewPostButton() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ipAddress = useIpAddress();
-  const { authUser, loading } = useAnonymousAuth();
+  const { authUser } = useAnonymousAuth();
 
   // 이미지 선택 핸들러
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
