@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatDate } from '@/utils/dateFormat';
 import { FaHeart, FaRegHeart, FaComment } from 'react-icons/fa';
 import { db } from '@/lib/firebase';
 import { 
@@ -242,7 +241,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         <div className="font-bold text-gray-900">{post.nickname}</div>
         <div className="flex items-center gap-2">
           <div className="text-gray-500 text-sm">
-            {format(post.createdAt, 'PPP a h:mm', { locale: ko })}
+            {formatDate(post.createdAt)}
           </div>
           {post.authorIp !== 'legacy-post' && isAuthor && (
             <button
@@ -327,7 +326,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                     <div className="font-bold text-gray-900">{comment.nickname}</div>
                     <div className="flex items-center gap-2">
                       <div className="text-gray-500 text-sm">
-                        {format(comment.createdAt, 'PPP a h:mm', { locale: ko })}
+                        {formatDate(comment.createdAt)}
                       </div>
                       {comment.authorIp === ipAddress && (
                         <button
