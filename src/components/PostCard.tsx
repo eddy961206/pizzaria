@@ -389,29 +389,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
-      {/* 게시글 헤더 */}
+      {/* 게시글 헤더 - 수정/삭제 버튼 제거 */}
       <div className="flex items-center justify-between mb-4">
         <div className="font-bold text-gray-900">{post.nickname}</div>
-        <div className="flex items-center gap-2">
-          <div className="text-gray-500 text-sm">
-            {formatDate(post.createdAt)}
-          </div>
-          {post.authorIp !== 'legacy-post' && isAuthor && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="text-blue-500 hover:text-blue-700 text-sm"
-              >
-                수정
-              </button>
-              <button
-                onClick={handleDeletePost}
-                className="text-red-500 hover:text-red-700 text-sm"
-              >
-                삭제
-              </button>
-            </div>
-          )}
+        <div className="text-gray-500 text-sm">
+          {formatDate(post.createdAt)}
         </div>
       </div>
 
@@ -496,24 +478,43 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         </>
       )}
 
-      {/* 좋아요와 댓글 */}
-      <div className="flex items-center space-x-4 mb-4">
-        {/* 좋아요 버튼 */}
-        <button 
-          onClick={toggleLike}
-          className="flex items-center space-x-1 text-gray-500 hover:text-red-500"
-        >
-          {isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />} {/* 좋아요 아이콘 */}
-          <span>{likesCount}</span> {/* 좋아요 카운트 */}
-        </button>
-        {/* 댓글 버튼 */}
-        <button 
-          onClick={loadComments}
-          className="flex items-center space-x-1 text-gray-500 hover:text-blue-500"
-        >
-          <FaComment /> {/* 댓글 아이콘 */}
-          <span>{commentsCount}</span>  {/* 댓글 카운트 */}
-        </button>
+      {/* 좋아요, 댓글, 수정/삭제 버튼을 한 줄에 배치 */}
+      <div className="flex items-center mb-4">
+        {/* 좋아요와 댓글 버튼은 왼쪽에 */}
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={toggleLike}
+            className="flex items-center space-x-1 text-gray-500 hover:text-red-500"
+          >
+            {isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
+            <span>{likesCount}</span>
+          </button>
+          <button 
+            onClick={loadComments}
+            className="flex items-center space-x-1 text-gray-500 hover:text-blue-500"
+          >
+            <FaComment />
+            <span>{commentsCount}</span>
+          </button>
+        </div>
+
+        {/* 수정/삭제 버튼은 오른쪽에 */}
+        {post.authorIp !== 'legacy-post' && isAuthor && (
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="text-blue-500 hover:text-blue-700 text-sm"
+            >
+              수정
+            </button>
+            <button
+              onClick={handleDeletePost}
+              className="text-red-500 hover:text-red-700 text-sm"
+            >
+              삭제
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 댓글 섹션 */}
