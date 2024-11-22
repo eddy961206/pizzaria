@@ -252,7 +252,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       post.content = editedContent.trim();
       setIsEditing(false);
     } catch (error) {
-      console.error('게시글 수정 중 에러 발생:', error);
+      console.error('게시글 수정 중 에��� 발생:', error);
       alert('게시글 수정에 실패했습니다.');
     }
   };
@@ -281,6 +281,32 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       alert('댓글 수정에 실패했습니다.');
     }
   };
+
+  // 텍스트 영역 크기 자동 조절 함수
+  const adjustTextareaHeight = (textarea: HTMLTextAreaElement) => {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+
+  // 수정 모드 전환 시 텍스트 영역 크기 자동 조절
+  useEffect(() => {
+    if (isEditing) {
+      const textarea = document.querySelector('textarea[name="post-edit"]') as HTMLTextAreaElement;
+      if (textarea) {
+        adjustTextareaHeight(textarea);
+      }
+    }
+  }, [isEditing]);
+
+  // 댓글 수정 모드 전환 시 텍스트 영역 크기 자동 조절
+  useEffect(() => {
+    if (editingCommentId) {
+      const textarea = document.querySelector('textarea[name="comment-edit"]') as HTMLTextAreaElement;
+      if (textarea) {
+        adjustTextareaHeight(textarea);
+      }
+    }
+  }, [editingCommentId]);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
@@ -314,9 +340,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       {isEditing ? (
         <form onSubmit={handleEditSubmit} className="mb-4">
           <textarea
+            name="post-edit"
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full p-2 border rounded text-gray-700 mb-2 min-h-[100px] whitespace-pre-wrap"
+            onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
+            className="w-full p-2 border rounded text-gray-700 mb-2 min-h-[100px] whitespace-pre-wrap resize-none"
+            style={{ height: 'auto', minHeight: '100px' }}
             required
           />
           <div className="flex justify-end gap-2">
@@ -439,9 +468,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                     <div className="mt-2">
                       <div className="flex gap-2">
                         <textarea
+                          name="comment-edit"
                           value={editedCommentContent}
                           onChange={(e) => setEditedCommentContent(e.target.value)}
-                          className="flex-1 p-2 border rounded text-gray-700 min-h-[60px] whitespace-pre-wrap"
+                          onInput={(e) => adjustTextareaHeight(e.target as HTMLTextAreaElement)}
+                          className="flex-1 p-2 border rounded text-gray-700 min-h-[60px] whitespace-pre-wrap resize-none"
+                          style={{ height: 'auto', minHeight: '60px' }}
                         />
                         <button
                           onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
