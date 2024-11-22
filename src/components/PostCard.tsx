@@ -316,7 +316,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full p-2 border rounded text-gray-700 mb-2"
+            className="w-full p-2 border rounded text-gray-700 mb-2 min-h-[100px] whitespace-pre-wrap"
             required
           />
           <div className="flex justify-end gap-2">
@@ -339,7 +339,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </form>
       ) : (
-        <p className="mb-4 text-gray-800">{post.content}</p>
+        <p className="mb-4 text-gray-800 whitespace-pre-wrap break-words">{post.content}</p>
       )}
 
       {post.imageUrl && (
@@ -438,11 +438,10 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                   {editingCommentId === comment.id ? (
                     <div className="mt-2">
                       <div className="flex gap-2">
-                        <input
-                          type="text"
+                        <textarea
                           value={editedCommentContent}
                           onChange={(e) => setEditedCommentContent(e.target.value)}
-                          className="flex-1 p-2 border rounded text-gray-700"
+                          className="flex-1 p-2 border rounded text-gray-700 min-h-[60px] whitespace-pre-wrap"
                         />
                         <button
                           onClick={() => handleCommentEdit(comment.id, editedCommentContent)}
@@ -462,7 +461,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                       </div>
                     </div>
                   ) : (
-                    <p className="mt-1 text-gray-800">{comment.content}</p>
+                    <p className="mt-1 text-gray-800 whitespace-pre-wrap break-words">{comment.content}</p>
                   )}
                 </div>
               ))}
