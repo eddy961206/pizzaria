@@ -9,7 +9,6 @@ import {
   doc, 
   updateDoc, 
   collection, 
-  addDoc, 
   getDocs, 
   query, 
   where, 
@@ -22,7 +21,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { useIpAddress } from '@/hooks/useIpAddress';
 import LoadingSpinner from './LoadingSpinner';
 import { useAnonymousAuth } from '@/hooks/useAnonymousAuth';
-
+import Image from 'next/image';
 interface PostCardProps {
   post: Post;
   onDelete: (postId: string) => void;
@@ -48,7 +47,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImageRemoved, setIsImageRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { authUser, loading } = useAnonymousAuth();
+  const { authUser } = useAnonymousAuth();
 
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
@@ -439,10 +438,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             {/* 현재 이미지 또는 새로 선택된 이미지 */}
             {!isImageRemoved && (previewUrl || post.imageUrl) && (
               <div className="mb-4 relative">
-                <img
-                  src={previewUrl || post.imageUrl}
+                <Image
+                  src={previewUrl || post.imageUrl || ''}
                   alt="게시글 이미지"
                   className="w-full h-auto rounded-lg"
+                  width={800}
+                  height={600}
                 />
                 <button
                   type="button"
@@ -487,10 +488,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           <>
             {/* 이미지를 본문 위로 이동 */}
             {post.imageUrl && (
-              <img 
+              <Image 
                 src={post.imageUrl} 
                 alt="게시글 이미지" 
                 className="w-full h-auto rounded-lg mb-4"
+                width={800}
+                height={600}
               />
             )}
             <p className="mb-4 text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{post.content}</p>

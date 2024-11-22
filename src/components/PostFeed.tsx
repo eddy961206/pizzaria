@@ -12,7 +12,7 @@ import { useAnonymousAuth } from '@/hooks/useAnonymousAuth';
 const POSTS_PER_PAGE = 5;
 
 export default function PostFeed() {
-  const { authUser, loading } = useAnonymousAuth();
+  const { loading } = useAnonymousAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
