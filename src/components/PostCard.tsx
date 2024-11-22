@@ -531,7 +531,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         )}
 
         {/* 댓글 섹션 */}
-        {showComments && (
+        {showComments && !isEditing && (
           <div className="mt-4">
             {/* 댓글 작성 폼 */}
             <form onSubmit={handleCommentSubmit} className="mb-4">
