@@ -19,14 +19,19 @@ export function useAnonymousAuth() {
       }
     };
 
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setAuthUser(user);
       if (!user) {
-        signInAnonymousUser();
-      } else {
-        setLoading(false);
+        try {
+          await signInAnonymousUser();
+        } catch (error) {
+          console.error('익명 로그인 실패:', error);
+          alert('익명 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        }
       }
+      setLoading(false);
     });
+    
 
     return () => unsubscribe();
   }, []);

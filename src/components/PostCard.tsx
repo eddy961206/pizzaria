@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Post, Comment } from '@/types';
 import { formatDate } from '@/utils/dateFormat';
 import { FaHeart, FaRegHeart, FaComment } from 'react-icons/fa';
-import { auth, db, storage } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { 
   doc, 
   updateDoc, 
@@ -52,7 +52,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   // IP 주소가 로드되면 작성자 여부 확인
   useEffect(() => {
     if (ipAddress) {
-      setIsAuthor(post.authorIp !== 'legacy-post' && post.authorIp === ipAddress);
+      setIsAuthor(post.authorIp === ipAddress && post.authorId === authUser?.uid);
     }
   }, [ipAddress, post.authorIp]);
 
@@ -65,7 +65,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         const likesQuery = query(
           collection(db, 'likes'),
           where('postId', '==', post.id),
-          where('userIp', '==', ipAddress)
+          where('userIp', '==', ipAddress),
+          where('userId', '==', authUser?.uid)  // 사용자 ID로도 체크
         );
         
         const snapshot = await getDocs(likesQuery);
@@ -89,7 +90,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       const likesQuery = query(
         collection(db, 'likes'),
         where('postId', '==', post.id),
-        where('userIp', '==', ipAddress)
+        where('userIp', '==', ipAddress),
+        where('userId', '==', authUser?.uid)  // 사용자 ID로도 체크
       );
       
       const snapshot = await getDocs(likesQuery);
@@ -101,6 +103,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         batch.set(likeRef, {
           postId: post.id,
           userIp: ipAddress,
+          userId: authUser?.uid,  // 사용자 ID 추가
           createdAt: Date.now()
         });
         batch.update(postRef, { likes: increment(1) });
@@ -156,7 +159,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   // 댓글 작성 함수 수정
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !nickname.trim() || !ipAddress || !auth.currentUser) return;
+    if (!newComment.trim() || !nickname.trim() || !ipAddress || !authUser) return;
 
     const commentData = {
       postId: post.id,
@@ -164,7 +167,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       nickname: nickname.trim(),
       createdAt: Date.now(),
       authorIp: ipAddress,
-      authorId: auth.currentUser.uid  // 익명 사용자 ID 추가
+      authorId: authUser?.uid  // 익명 사용자 ID 추가
     };
 
     try {
@@ -522,7 +525,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             </div>
 
             {/* 수정/삭제 버튼은 오른쪽에 */}
-            {post.authorIp !== 'legacy-post' && isAuthor && (
+            {isAuthor && (
               <div className="flex gap-2 ml-auto">
                 <button
                   onClick={() => setIsEditing(!isEditing)}
@@ -592,7 +595,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                           <div className="text-gray-500 dark:text-gray-400 text-xs">
                             {formatDate(comment.createdAt)}
                           </div>
-                          {comment.authorIp === ipAddress && (
+                          {authUser && comment.authorId === authUser.uid && (
                             <div className="flex gap-2">
                               <button
                                 onClick={() => {

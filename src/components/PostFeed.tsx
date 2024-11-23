@@ -52,17 +52,10 @@ export default function PostFeed() {
       
       const postList = snapshot.docs.map(doc => {
         const data = doc.data();
-        // authorIp가 없는 경우 레거시 표시를 위한 특별 값 할당
-        if (!data.authorIp) {
-          batch.update(doc.ref, { 
-            authorIp: 'legacy-post',
-            comments: data.comments || 0 
-          });
-        }
         return {
           id: doc.id,
           ...data,
-          authorIp: data.authorIp || 'legacy-post',
+          authorIp: data.authorIp,
           comments: data.comments || 0
         } as Post;
       });
@@ -94,16 +87,10 @@ export default function PostFeed() {
       
       const newPosts = snapshot.docs.map(doc => {
         const data = doc.data();
-        if (!data.authorIp) {
-          batch.update(doc.ref, { 
-            authorIp: 'legacy-post',
-            comments: data.comments || 0 
-          });
-        }
         return {
           id: doc.id,
           ...data,
-          authorIp: data.authorIp || 'legacy-post',
+          authorIp: data.authorIp,
           comments: data.comments || 0
         } as Post;
       });
