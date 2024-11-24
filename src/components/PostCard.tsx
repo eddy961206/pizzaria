@@ -59,14 +59,13 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   // 좋아요 상태 체크
   useEffect(() => {
     const checkLikeStatus = async () => {
-      if (!ipAddress) return;
+      if (!authUser) return;
       
       try {
         const likesQuery = query(
           collection(db, 'likes'),
           where('postId', '==', post.id),
-          where('userIp', '==', ipAddress),
-          where('userId', '==', authUser?.uid)  // 사용자 ID로도 체크
+          where('userId', '==', authUser.uid)  // userIp 제거하고 userId만 사용
         );
         
         const snapshot = await getDocs(likesQuery);
@@ -77,11 +76,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     };
 
     checkLikeStatus();
-  }, [ipAddress, post.id]);
+  }, [authUser, post.id]);
 
   // 좋아요 토글 함수 수정
   const toggleLike = async () => {
-    if (!ipAddress) return;
+    if (!ipAddress || !authUser) return;
 
     try {
       const batch = writeBatch(db);
@@ -90,8 +89,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       const likesQuery = query(
         collection(db, 'likes'),
         where('postId', '==', post.id),
-        where('userIp', '==', ipAddress),
-        where('userId', '==', authUser?.uid)  // 사용자 ID로도 체크
+        where('userId', '==', authUser.uid)  // userIp 대신 userId만 사용
       );
       
       const snapshot = await getDocs(likesQuery);
@@ -102,8 +100,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         const likeRef = doc(collection(db, 'likes'));
         batch.set(likeRef, {
           postId: post.id,
-          userIp: ipAddress,
-          userId: authUser?.uid,  // 사용자 ID 추가
+          userId: authUser.uid,  // userIp 제거하고 userId만 사용
           createdAt: Date.now()
         });
         batch.update(postRef, { likes: increment(1) });
@@ -159,15 +156,14 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   // 댓글 작성 함수 수정
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !nickname.trim() || !ipAddress || !authUser) return;
+    if (!newComment.trim() || !nickname.trim() || !authUser) return;
 
     const commentData = {
       postId: post.id,
       content: newComment.trim(),
       nickname: nickname.trim(),
       createdAt: Date.now(),
-      authorIp: ipAddress,
-      authorId: authUser?.uid  // 익명 사용자 ID 추가
+      authorId: authUser.uid  // IP 주소 제거하고 userId만 사용
     };
 
     try {
@@ -226,8 +222,10 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
-  // 댓글 삭제 함수를 컴포넌트 내부로 이동
+  // 댓글 삭제 함수 수정
   const handleDeleteComment = async (commentId: string) => {
+    if (!authUser) return;
+    
     if (window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
       try {
         const batch = writeBatch(db);
@@ -344,9 +342,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
-  // 댓글 수정 함수
+  // 댓글 수정 함수 수정
   const handleCommentEdit = async (commentId: string, newContent: string) => {
-    if (!newContent.trim()) return;
+    if (!newContent.trim() || !authUser) return;
 
     try {
       const commentRef = doc(db, 'comments', commentId);
@@ -364,7 +362,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       setEditingCommentId(null);
       setEditedCommentContent('');
     } catch (error) {
-      console.error('댓글 수정 중 에러 발:', error);
+      console.error('댓글 수정 중 에러 발생:', error);
       alert('댓글 수정에 실패했습니다.');
     }
   };
@@ -404,6 +402,11 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       );
     }
   }, [ipAddress, post.authorIp, post.authorId, authUser]);
+
+  // 댓글 작성자 확인 로직 수정
+  const isCommentAuthor = (comment: Comment) => {
+    return authUser && comment.authorId === authUser.uid;
+  };
 
   return (
     <>
@@ -595,7 +598,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
                           <div className="text-gray-500 dark:text-gray-400 text-xs">
                             {formatDate(comment.createdAt)}
                           </div>
-                          {authUser && comment.authorId === authUser.uid && (
+                          {isCommentAuthor(comment) && (
                             <div className="flex gap-2">
                               <button
                                 onClick={() => {

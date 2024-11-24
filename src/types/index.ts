@@ -18,6 +18,5 @@ export interface Comment {
   content: string;
   nickname: string;
   createdAt: number;
-  authorIp: string;
   authorId: string;
 }
