@@ -18,7 +18,6 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { useIpAddress } from '@/hooks/useIpAddress';
 import LoadingSpinner from './LoadingSpinner';
 import { useAnonymousAuth } from '@/hooks/useAnonymousAuth';
 import Image from 'next/image';
@@ -36,7 +35,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [nickname, setNickname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.comments);
-  const ipAddress = useIpAddress();
   const [isAuthor, setIsAuthor] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(post.content);
@@ -49,13 +47,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { authUser } = useAnonymousAuth();
 
-  // IP 주소가 로드되면 작성자 여부 확인
-  useEffect(() => {
-    if (ipAddress) {
-      setIsAuthor(post.authorIp === ipAddress && post.authorId === authUser?.uid);
-    }
-  }, [ipAddress, post.authorIp]);
-
   // 좋아요 상태 체크
   useEffect(() => {
     const checkLikeStatus = async () => {
@@ -65,7 +56,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         const likesQuery = query(
           collection(db, 'likes'),
           where('postId', '==', post.id),
-          where('userId', '==', authUser.uid)  // userIp 제거하고 userId만 사용
+          where('userId', '==', authUser.uid)
         );
         
         const snapshot = await getDocs(likesQuery);
@@ -80,46 +71,45 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
   // 좋아요 토글 함수 수정
   const toggleLike = async () => {
-    if (!ipAddress || !authUser) return;
+    if (!authUser) return;
 
     try {
       const batch = writeBatch(db);
       
-      // likes 컬렉션에서 현재 사용자의 좋아요 문서 찾기
+      // 현재 사용자의 좋아요 상태만 확인
       const likesQuery = query(
         collection(db, 'likes'),
         where('postId', '==', post.id),
-        where('userId', '==', authUser.uid)  // userIp 대신 userId만 사용
+        where('userId', '==', authUser.uid)
       );
       
       const snapshot = await getDocs(likesQuery);
       const postRef = doc(db, 'posts', post.id);
 
-      if (snapshot.empty && !isLiked) {
+      if (isLiked) {
+        // 좋아요 제거
+        if (!snapshot.empty) {
+          batch.delete(doc(db, 'likes', snapshot.docs[0].id));
+          batch.update(postRef, { likes: increment(-1) });
+        }
+      } else {
         // 좋아요 추가
         const likeRef = doc(collection(db, 'likes'));
         batch.set(likeRef, {
           postId: post.id,
-          userId: authUser.uid,  // userIp 제거하고 userId만 사용
+          userId: authUser.uid,
           createdAt: Date.now()
         });
         batch.update(postRef, { likes: increment(1) });
-        setIsLiked(true);
-        setLikesCount(prev => prev + 1);
-      } else if (!snapshot.empty && isLiked) {
-        // 좋아요 제거
-        batch.delete(doc(db, 'likes', snapshot.docs[0].id));
-        batch.update(postRef, { likes: increment(-1) });
-        setIsLiked(false);
-        setLikesCount(prev => prev - 1);
       }
 
       await batch.commit();
+      
+      // UI 업데이트
+      setIsLiked(!isLiked);
+      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
     } catch (error) {
       console.error('좋아요 업데이트 중 에러 발생:', error);
-      // 에러 발생 시 상태 되돌리기
-      setIsLiked(!isLiked);
-      setLikesCount(isLiked ? likesCount + 1 : likesCount - 1);
     }
   };
 
@@ -395,13 +385,15 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
   // 작성자 확인 로직 수정
   useEffect(() => {
-    if (ipAddress && authUser) {
-      setIsAuthor(
-        post.authorIp === ipAddress &&
-        post.authorId === authUser.uid
-      );
+    if (authUser) {
+      console.debug('권한 체크:', {
+        postAuthorId: post.authorId,
+        currentUserId: authUser.uid,
+        isMatching: post.authorId === authUser.uid
+      });
+      setIsAuthor(post.authorId === authUser.uid);
     }
-  }, [ipAddress, post.authorIp, post.authorId, authUser]);
+  }, [authUser, post.authorId]);
 
   // 댓글 작성자 확인 로직 수정
   const isCommentAuthor = (comment: Comment) => {

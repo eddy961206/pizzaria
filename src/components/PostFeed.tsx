@@ -55,7 +55,7 @@ export default function PostFeed() {
         return {
           id: doc.id,
           ...data,
-          authorIp: data.authorIp,
+          authorId: data.authorId,
           comments: data.comments || 0
         } as Post;
       });
@@ -90,7 +90,7 @@ export default function PostFeed() {
         return {
           id: doc.id,
           ...data,
-          authorIp: data.authorIp,
+          authorId: data.authorId,
           comments: data.comments || 0
         } as Post;
       });

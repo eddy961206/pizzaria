@@ -7,7 +7,6 @@ export interface Post {
   nickname: string;
   likes: number;
   comments: number;
-  authorIp: string;
   authorId: string;
 }
 
@@ -19,4 +18,12 @@ export interface Comment {
   nickname: string;
   createdAt: number;
   authorId: string;
+}
+
+// 좋아요 타입 정의
+export interface Like {
+  id: string;
+  postId: string;
+  userId: string;
+  createdAt: number;
 }

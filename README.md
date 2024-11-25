@@ -64,7 +64,7 @@ vercel
     *  "사용 설정" 클릭하여 데이터베이스 생성
 5. Firestore 규칙 설정:
 Firestore Database 페이지에서 "규칙" 탭 클릭
-다음 규칙을 입력하고 "게시" 버튼 클릭:
+`개발 시` 다음 규칙을 입력하고 "게시" 버튼 클릭:
 
       ```javascript
       rules_version = '2';
@@ -88,6 +88,65 @@ Firestore Database 페이지에서 "규칙" 탭 클릭
         }
       }
       ```
+
+`실제 서비스 시` 규칙 :
+  ```javascript
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      // 기본 읽기 권한은 모두에게 허용
+      match /{document=**} {
+        allow read: if true;
+      }
+      
+      // posts 컬렉션 규칙
+      match /posts/{postId} {
+        allow create: if request.auth != null 
+          && request.resource.data.authorId == request.auth.uid;
+
+        allow update: if request.auth != null && (
+          // 작성자는 모든 필드 업데이트 가능
+          resource.data.authorId == request.auth.uid
+          ||
+          // 다른 사용자들은 likes와 comments 필드만 증가 또는 감소 가능
+          (
+            // 업데이트하려는 필드가 정확히 1개인지 확인
+            request.writeFields.size() == 1
+            // 업데이트하려는 필드가 'likes' 또는 'comments' 중 하나인지 확인
+            && (request.writeFields.hasOnly(['likes']) || request.writeFields.hasOnly(['comments']))
+            // 해당 필드의 값이 1만큼 증가하거나 감소했는지 확인
+            && (
+              request.resource.data[request.writeFields[0]] == resource.data[request.writeFields[0]] + 1 ||
+              request.resource.data[request.writeFields[0]] == resource.data[request.writeFields[0]] -1
+            )
+            // 다른 필드는 전혀 변경되지 않았는지 확인
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([request.writeFields[0]])
+          )
+        );
+
+        allow delete: if request.auth != null 
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      
+      // comments 컬렉션 규칙
+      match /comments/{commentId} {
+        allow create: if request.auth != null
+          && request.resource.data.authorId == request.auth.uid;
+        
+        allow update, delete: if request.auth != null 
+          && resource.data.authorId == request.auth.uid;
+      }
+      
+      // likes 컬렉션 규칙
+      match /likes/{likeId} {
+        allow read: if request.auth != null;
+        allow create, delete: if request.auth != null;
+      }
+    }
+  } 
+  ``` 
+
 
 6. Storage 규칙 설정(이미지 업로드를 위해) :
 * 왼쪽 메뉴에서 "Storage" 클릭
